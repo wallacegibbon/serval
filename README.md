@@ -1,9 +1,13 @@
 serval
-=====
+======
 
-An OTP application
+** configure
 
-Build
------
+```erlang
+serval_ctl:init_websvc(#{static_prefix => "/static/", api_prefix => "/api/",
+			 static_fspath => "/tmp", port => 9000}).
+}).
 
-    $ rebar3 compile
+serval_ctl:set_safemodules([calendar]).
+
+```
