@@ -61,12 +61,9 @@ handle_info(_Info, State) ->
 
 
 init([]) ->
-    io:format("~p is starting...~n", [?MODULE]),
-    process_flag(trap_exit, true),
     {ok, #{started => false, safemodules => []}}.
 
 terminate(_Reason, _State) ->
-    io:format("~p is stopping...~n", [?MODULE]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
