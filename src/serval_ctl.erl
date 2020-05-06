@@ -29,9 +29,9 @@ stop() ->
 
 
 handle_call({init_websvc, Configs}, _From, #{started := false} = State) ->
-    StaticPath = maps:get(static_path, Configs, "/tmp"),
-    StaticUrl = maps:get(static_url, Configs, "/static/[...]"),
-    ApiUrl = maps:get(api_url, Configs, "/") ++ ":module/:fn",
+    StaticPath = maps:get(static_fspath, Configs, "/tmp"),
+    StaticUrl = maps:get(static_prefix, Configs, "/static/") ++ "[...]",
+    ApiUrl = maps:get(api_prefix, Configs, "/") ++ ":module/:fn",
     Port = maps:get(port, Configs, 8080),
     Dispatch = cowboy_router:compile([{'_', mkroute(StaticPath, StaticUrl,
 						    ApiUrl)}]),
