@@ -73,7 +73,7 @@ api(Module, Function, Arguments) ->
 	    throw({serval, "undefined"})
     end.
 
-handle_request(api, Module, Fn, Argument) ->
+handle_request(jsonerl, Module, Fn, Argument) ->
     R = api(Module, Fn, decode_apiargument(Argument)),
     RespHeaders = #{<<"content-type">> => <<"application/json">>},
     {RespHeaders, encode(R)};
