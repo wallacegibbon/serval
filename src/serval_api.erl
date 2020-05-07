@@ -79,7 +79,7 @@ handle_request(jsonerl, Module, Fn, Argument) ->
     {RespHeaders, encode(R)};
 handle_request(raw, Module, Fn, Argument) ->
     R = api(Module, Fn, [Argument]),
-    {#{}, ensure_binary(R)}.
+    {#{}, ensure_binary(R)};
 handle_request(_, _, _, _) ->
     {#{}, <<"invalid url">>}.
 
