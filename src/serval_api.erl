@@ -1,4 +1,4 @@
--module(serval_web).
+-module(serval_api).
 
 -export([init/2, terminate/3]).
 
@@ -9,24 +9,33 @@
 %% Http related things
 %%----------------------------------------------------------------------
 
-%% read the content from HTTP body and parse it (as JSON)
-get_params(#{bindings := #{module := Module, fn := Fn}} = Req0) ->
+get_command(#{bindings := #{type := Type, module := Module, fn := Fn}}
+	    = Req0) ->
+    TypeAtom = extract_atom(Type),
+    ModuleAtom = extract_atom(Module),
+    FnAtom = extract_atom(Fn),
+    check_safety(ModuleAtom),
+    {ok, Argument, Req1} = cowboy_req:read_body(Req0),
+    {Req1, {TypeAtom, ModuleAtom, FnAtom, Argument}}.
+
+extract_atom(Binary) ->
     try
-	ModuleAtom = binary_to_existing_atom(Module, utf8),
-	FnAtom = binary_to_existing_atom(Fn, utf8),
-	check_safety(ModuleAtom),
-	{ok, Data, Req1} = cowboy_req:read_body(Req0),
-	Params = check_params(decode(fix_emptybody(Data))),
-	{Req1, {ModuleAtom, FnAtom, Params}}
+	binary_to_existing_atom(Binary, utf8)
+    catch
+	error:badarg ->
+	    throw({serval, "unknown operation"})
+    end.
+
+decode_apiargument(Rawbody) ->
+    try
+	check_params(decode(fix_emptybody(Rawbody)))
     catch
 	throw:{invalid_json, _V} ->
-	    throw({serval, "argument encoding error"});
-	error:badarg ->
-	    throw({serval, "unknown fn"})
+	    throw({serval, "argument is not valid"})
     end.
 
 check_safety(Module) ->
-    Safemodules = serval_ctl:get_safemodules(),
+    Safemodules = serval:get_safemodules(),
     Safe = lists:any(fun(X) -> X =:= Module end, Safemodules),
     if not Safe ->
 	   throw({serval, "unsafe operation"});
@@ -44,12 +53,6 @@ fix_emptybody(<<>>) ->
 fix_emptybody(A) ->
     A.
 
-record_request(Req) ->
-    #{bindings := #{module := Module, fn := Fn}, peer := Peer} = Req,
-    ForwardFor = maps:get(<<"x-forwarded-for">>, Req, none),
-    io:format("Peer: ~p; Proxy: ~s; For: ~s->~s~n",
-	      [Peer, ForwardFor, Module, Fn]).
-
 handle_cors(Req) ->
     R1 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>,
 				    <<"OPTIONS, GET, POST">>, Req),
@@ -61,39 +64,47 @@ handle_cors(Req) ->
 				    <<"864000">>, R3),
     R4.
 
-api(Module, Function, Params) ->
+api(Module, Function, Arguments) ->
+    io:format(">> calling ~s:~s with ~p~n", [Module, Function, Arguments]),
     try
-	apply(Module, Function, Params)
+	apply(Module, Function, Arguments)
     catch
 	error:undef ->
-	    throw({serval, "argument error"})
+	    throw({serval, "undefined"})
     end.
 
-handle_request(Req0) ->
-    record_request(Req0),
-    {Req1, {Module, Fn, Params}} = get_params(Req0),
-    Result = api(Module, Fn, Params),
-    Req2 = handle_cors(Req1),
-    {Req2, Result}.
+handle_request(api, Module, Fn, Argument) ->
+    R = api(Module, Fn, decode_apiargument(Argument)),
+    RespHeaders = #{<<"content-type">> => <<"application/json">>},
+    {RespHeaders, encode(R)};
+handle_request(raw, Module, Fn, Argument) ->
+    R = api(Module, Fn, [Argument]),
+    {#{}, ensure_binary(R)}.
 
-safe_handle(Req0) ->
+handle_common(Req0) ->
     try
-	handle_request(Req0)
-    of
-	{Req1, Result} ->
-	    {Req1, {ok, Result}}
+	{Req1, {Type, Module, Fn, Argument}} = get_command(Req0),
+	{RespHeaders, Body} = handle_request(Type, Module, Fn, Argument),
+	Req2 = handle_cors(Req1),
+	{Req2, RespHeaders, Body}
     catch
 	throw:{serval, Info}->
-	    {Req0, {failed, ensure_list(Info)}};
-	_:Any:S ->
-	    io:format("stacktrace:~n~p~n", [S]),
-	    {Req0, {failed, ensure_list(Any)}}
+	    {Req0, #{}, encode({error, ensure_binary(Info)})}
+    end.
+
+%% stack traces for unknown error are printed
+safe_handle(Req0) ->
+    try
+	handle_common(Req0)
+    catch
+	T:Any:S ->
+	    io:format("*~p: ~p, stacktrace:~n~p~n", [T, Any, S]),
+	    {Req0, #{}, encode({fatal, ensure_binary(Any)})}
     end.
 
 init(Req0, State) ->
-    {Req1, R} = safe_handle(Req0),
-    RespHeaders = #{<<"content-type">> => <<"application/json">>},
-    Req2 = cowboy_req:reply(200, RespHeaders, encode(R), Req1),
+    {Req1, Headers, Body} = safe_handle(Req0),
+    Req2 = cowboy_req:reply(200, Headers, Body, Req1),
     {ok, Req2, State}.
 
 terminate(_Reason, _Req, _State) ->
@@ -104,7 +115,12 @@ terminate(_Reason, _Req, _State) ->
 %%----------------------------------------------------------------------
 
 encode(Anything) ->
-    jsone:encode(encode_1(Anything)).
+    try
+	jsone:encode(encode_1(Anything))
+    catch
+	error:badarg ->
+	    throw({invalid_json, Anything})
+    end.
 
 encode_1(E) when is_atom(E) ->
     #{<<"t">> => <<"atom">>, <<"v">> => list_to_binary(atom_to_list(E))};
@@ -119,8 +135,14 @@ encode_1([]) ->
 encode_1(V) ->
     throw({invalid_json, V}).
 
+
 decode(Anything) ->
-    decode_1(jsone:decode(Anything)).
+    try
+	decode_1(jsone:decode(Anything))
+    catch
+	error:badarg ->
+	    throw({invalid_json, Anything})
+    end.
 
 decode_1(#{<<"t">> := <<"atom">>, <<"v">> := V}) ->
     binary_to_existing_atom(V, utf8);
@@ -134,6 +156,7 @@ decode_1([]) ->
     [];
 decode_1(V) ->
     throw({invalid_json, V}).
+
 
 -ifdef(TEST).
 
@@ -162,8 +185,8 @@ decode_test_() ->
 %%----------------------------------------------------------------------
 %% utilities
 %%----------------------------------------------------------------------
-ensure_list(Any) when is_list(Any) ->
-    list_to_binary(Any);
-ensure_list(Any) ->
-    Any.
+ensure_binary(Any) when is_list(Any); is_binary(Any) ->
+    list_to_binary(io_lib:format("~s", [Any]));
+ensure_binary(Any) ->
+    list_to_binary(io_lib:format("~p", [Any])).
 

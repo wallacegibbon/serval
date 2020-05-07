@@ -12,8 +12,7 @@ start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 child_specs() ->
-    [{serval_ctl, {serval_ctl, start_link, []}, permanent, 10000, worker,
-      [serval_ctl]}].
+    [{serval, {serval, start_link, []}, permanent, 10000, worker, [serval]}].
 
 init([]) ->
     {ok, {{one_for_one, 10, 10}, child_specs()}}.
