@@ -1,9 +1,9 @@
 {application, serval,
  [{description, "An OTP application"},
-  {vsn, "0.2.3"},
+  {vsn, "0.2.4"},
   {modules, []},
   {registered, []},
-  {applications, [kernel, stdlib, cowboy]},
+  {applications, [kernel, stdlib, cowboy, jsone]},
 
   {mod, {serval_app, []}},
 
