@@ -101,7 +101,7 @@ safe_handle(Req0) ->
     catch
 	T:I:S ->
 	    io:format("*~p: ~p, stacktrace:~n~p~n", [T, I, S]),
-	    {Req0, #{}, encode({fatal, "server error"})}
+	    {Req0, #{}, encode({fatal, <<"server error">>})}
     end.
 
 init(Req0, State) ->
