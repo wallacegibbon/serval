@@ -99,9 +99,9 @@ safe_handle(Req0) ->
     try
 	handle_common(Req0)
     catch
-	T:Any:S ->
-	    io:format("*~p: ~p, stacktrace:~n~p~n", [T, Any, S]),
-	    {Req0, #{}, encode({fatal, ensure_binary(Any)})}
+	T:I:S ->
+	    io:format("*~p: ~p, stacktrace:~n~p~n", [T, I, S]),
+	    {Req0, #{}, encode({fatal, "server error"})}
     end.
 
 init(Req0, State) ->
