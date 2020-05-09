@@ -128,6 +128,8 @@ encode_1(E) when is_atom(E) ->
     #{<<"t">> => <<"atom">>, <<"v">> => list_to_binary(atom_to_list(E))};
 encode_1(E) when is_tuple(E) ->
     #{<<"t">> => <<"tuple">>, <<"v">> => encode_1(tuple_to_list(E))};
+encode_1(E) when is_map(E) ->
+    #{<<"t">> => <<"map">>, <<"v">> => encode_1(maps:to_list(E))};
 encode_1(E) when is_binary(E); is_number(E) ->
     E;
 encode_1([E | Rest]) ->
@@ -150,6 +152,8 @@ decode_1(#{<<"t">> := <<"atom">>, <<"v">> := V}) ->
     binary_to_existing_atom(V, utf8);
 decode_1(#{<<"t">> := <<"tuple">>, <<"v">> := V}) ->
     list_to_tuple(decode_1(V));
+decode_1(#{<<"t">> := <<"map">>, <<"v">> := V}) ->
+    maps:from_list(decode_1(V));
 decode_1(E) when is_binary(E); is_number(E) ->
     E;
 decode_1([E | Rest]) ->
@@ -169,11 +173,15 @@ encode_decode_maps() ->
      {{1,2}, <<"{\"t\":\"tuple\",\"v\":[1,2]}">>},
      {[1,2], <<"[1,2]">>},
      {[1,[2,[3]]], <<"[1,[2,[3]]]">>},
-     {[1,[2,[<<"blah">>]]], <<"[1,[2,[\"blah\"]]]">>}
+     {[1,[2,[<<"blah">>]]], <<"[1,[2,[\"blah\"]]]">>},
+     {#{}, <<"{\"t\":\"map\",\"v\":[]}">>},
+     {#{a => 1, b => 2}, <<"{\"t\":\"map\",\"v\":[{\"t\":\"tuple\",\"v\":[{\"t\":\"atom\",\"v\":\"a\"},1]},{\"t\":\"tuple\",\"v\":[{\"t\":\"atom\",\"v\":\"b\"},2]}]}">>},
+     {#{a => #{b => 2}}, <<"{\"t\":\"map\",\"v\":[{\"t\":\"tuple\",\"v\":[{\"t\":\"atom\",\"v\":\"a\"},{\"t\":\"map\",\"v\":[{\"t\":\"tuple\",\"v\":[{\"t\":\"atom\",\"v\":\"b\"},2]}]}]}]}">>}
     ].
 
 encode_test_() ->
     lists:map(fun({V, T}) ->
+		      %?debugFmt("~p~n", [encode(V)]),
 		      ?_assert(encode(V) =:= T)
 	      end, encode_decode_maps()).
 

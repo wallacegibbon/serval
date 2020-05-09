@@ -28,8 +28,10 @@ function decode(Obj) {
 	}
 	if (Obj.t === "tuple") {
 	    return decode(Obj.v);
+	} else if (Obj.t === "map") {
+	    return Object.fromEntries(decode(Obj.v));
 	} else {
-	    return Obj.v
+	    return Obj.v;
 	}
     } else if (typeof Obj === "string") {
 	return Obj;
