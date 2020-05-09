@@ -130,7 +130,9 @@ encode_1(E) when is_tuple(E) ->
     #{<<"t">> => <<"tuple">>, <<"v">> => encode_1(tuple_to_list(E))};
 encode_1(E) when is_map(E) ->
     #{<<"t">> => <<"map">>, <<"v">> => encode_1(maps:to_list(E))};
-encode_1(E) when is_binary(E); is_number(E) ->
+encode_1(E) when is_binary(E) ->
+    ensure_utf8(E);
+encode_1(E) when is_number(E) ->
     E;
 encode_1([E | Rest]) ->
     [encode_1(E) | encode_1(Rest)];
@@ -138,6 +140,17 @@ encode_1([]) ->
     [];
 encode_1(V) ->
     throw({invalid_json, V}).
+
+%% erlang binary could be NOT utf8
+%% @TODO: use a better way to check valid utf8 string
+ensure_utf8(Binary) when is_binary(Binary) ->
+    try
+	jsone:encode(Binary),
+	Binary
+    catch
+	error:badarg ->
+	    <<"non-utf8">>
+    end.
 
 
 decode(Anything) ->
@@ -163,7 +176,6 @@ decode_1([]) ->
 decode_1(V) ->
     throw({invalid_json, V}).
 
-
 -ifdef(TEST).
 
 encode_decode_maps() ->
@@ -184,6 +196,9 @@ encode_test_() ->
 		      %?debugFmt("~p~n", [encode(V)]),
 		      ?_assert(encode(V) =:= T)
 	      end, encode_decode_maps()).
+
+encode_invliad_utf8_test() ->
+    ?assert(encode(<<192>>) =:= <<"\"non-utf8\"">>).
 
 decode_test_() ->
     lists:map(fun({V, T}) ->
