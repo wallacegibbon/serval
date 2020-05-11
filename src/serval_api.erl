@@ -25,7 +25,7 @@ extract_atom(Binary) ->
 
 decode_apiargument(Rawbody) ->
     try
-	check_params(jsonerl:decode(fix_emptybody(Rawbody)))
+	check_params(jsonerl:decode_fromjson(fix_emptybody(Rawbody)))
     catch
 	throw:{invalid_json, _V} ->
 	    throw({serval, "argument is not valid"})
@@ -73,7 +73,7 @@ api(Module, Function, Arguments) ->
 handle_request(jsonerl, Module, Fn, Argument) ->
     R = api(Module, Fn, decode_apiargument(Argument)),
     RespHeaders = #{<<"content-type">> => <<"application/json">>},
-    {RespHeaders, jsonerl:encode(R)};
+    {RespHeaders, jsonerl:encode_tojson(R)};
 handle_request(raw, Module, Fn, Argument) ->
     R = api(Module, Fn, [Argument]),
     {#{}, ensure_binary(R)};
@@ -88,7 +88,7 @@ handle_common(Req0) ->
 	{Req2, RespHeaders, Body}
     catch
 	throw:{serval, Info}->
-	    {Req0, #{}, jsonerl:encode({error, ensure_binary(Info)})}
+	    {Req0, #{}, jsonerl:encode_tojson({error, ensure_binary(Info)})}
     end.
 
 %% stack traces for unknown error are printed
@@ -98,7 +98,7 @@ safe_handle(Req0) ->
     catch
 	T:I:S ->
 	    io:format("*~p: ~p, stacktrace:~n~p~n", [T, I, S]),
-	    {Req0, #{}, jsonerl:encode({fatal, <<"server error">>})}
+	    {Req0, #{}, jsonerl:encode_tojson({fatal, <<"server error">>})}
     end.
 
 init(Req0, State) ->
