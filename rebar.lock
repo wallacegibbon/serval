@@ -16,7 +16,7 @@
   0},
  {<<"jsonerl">>,
   {git,"https://github.com/wallacegibbon/jsonerl",
-       {ref,"064d998337b098ae366b5633dadb1707426065ee"}},
+       {ref,"8f8424b2ab1cb6064d576d72edbef360ed3c2f5a"}},
   0},
  {<<"ranch">>,
   {git,"https://github.com/ninenines/ranch",
