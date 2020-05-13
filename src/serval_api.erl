@@ -20,28 +20,28 @@ extract_atom(Binary) ->
 	binary_to_existing_atom(Binary, utf8)
     catch
 	error:badarg ->
-	    throw({serval, "unknown operation"})
+	    throw({serval, unknown_operation})
     end.
 
 decode_apiargument(Rawbody) ->
     try
 	check_params(jsonerl:decode_fromjson(fix_emptybody(Rawbody)))
     catch
-	throw:{invalid_json, _V} ->
-	    throw({serval, "argument is not valid"})
+	throw:{invalid_json, _V} = E ->
+	    throw({serval, E})
     end.
 
 check_safety(Module) ->
     Safemodules = serval:get_safemodules(),
     Safe = lists:any(fun(X) -> X =:= Module end, Safemodules),
     if not Safe ->
-	   throw({serval, "unsafe operation"});
+	   throw({serval, unsafe_operation});
        true ->
 	   nil
     end.
 
 check_params(Params) when not is_list(Params) ->
-    throw({serval, "params have to be list"});
+    throw({serval, non_list_params});
 check_params(Params) ->
     Params.
 
@@ -67,7 +67,7 @@ api(Module, Function, Arguments) ->
 	apply(Module, Function, Arguments)
     catch
 	error:undef ->
-	    throw({serval, "undefined"})
+	    throw({serval, undefined_function})
     end.
 
 handle_request(jsonerl, Module, Fn, Argument) ->
@@ -88,7 +88,7 @@ handle_common(Req0) ->
 	{Req2, RespHeaders, Body}
     catch
 	throw:{serval, Info}->
-	    {Req0, #{}, jsonerl:encode_tojson({error, ensure_binary(Info)})}
+	    {Req0, #{}, jsonerl:encode_tojson({error, Info})}
     end.
 
 %% stack traces for unknown error are printed
