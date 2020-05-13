@@ -98,7 +98,7 @@ safe_handle(Req0) ->
     catch
 	T:I:S ->
 	    io:format("*~p: ~p, stacktrace:~n~p~n", [T, I, S]),
-	    {Req0, #{}, jsonerl:encode_tojson({fatal, <<"server error">>})}
+	    {Req0, #{}, jsonerl:encode_tojson(server_error)}
     end.
 
 init(Req0, State) ->
