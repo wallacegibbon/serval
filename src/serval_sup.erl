@@ -8,12 +8,12 @@
 
 -define(SERVER, ?MODULE).
 
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
-
-child_specs() ->
-    [{serval, {serval, start_link, []}, permanent, 10000, worker, [serval]}].
+child(Module) ->
+    {Module, {Module, start_link, []}, permanent, 10000, worker, [Module]}.
 
 init([]) ->
-    {ok, {{one_for_one, 10, 10}, child_specs()}}.
+    {ok, {{one_for_one, 10, 10}, [child(serval)]}}.
+
+start_link() ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
