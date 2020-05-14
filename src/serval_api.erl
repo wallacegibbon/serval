@@ -102,8 +102,12 @@ safe_handle(Req0) ->
     end.
 
 init(Req0, State) ->
+    T1 = os:system_time(millisecond),
     {Req1, Headers, Body} = safe_handle(Req0),
-    Req2 = cowboy_req:reply(200, Headers, Body, Req1),
+    T2 = os:system_time(millisecond),
+    Timecost = list_to_binary(io_lib:format("~w", [T2 - T1])),
+    NewHeaders = Headers#{<<"api-cost">> => Timecost},
+    Req2 = cowboy_req:reply(200, NewHeaders, Body, Req1),
     {ok, Req2, State}.
 
 terminate(_Reason, _Req, _State) ->
