@@ -1,13 +1,7 @@
 {application, serval,
  [{description, "An OTP application"},
-  {vsn, "0.5.0"},
-  {modules, []},
-  {registered, []},
-  {applications, [kernel, stdlib, cowboy, jsone]},
-
-  {mod, {serval_app, []}},
-
-  {licenses, ["Apache 2.0"]},
-  {env,[]},
-  {links, []}
+  {vsn, "0.5.1"},
+  {registered, [serval_sup, serval]},
+  {applications, [kernel, stdlib, cowboy, jsone, jsonerl]},
+  {mod, {serval_app, []}}
  ]}.
