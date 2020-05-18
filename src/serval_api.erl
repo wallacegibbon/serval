@@ -32,7 +32,7 @@ decode_apiargument(Rawbody) ->
     end.
 
 check_safety(Module) ->
-    Safemodules = serval:get_safemodules(),
+    Safemodules = application:get_env(serval, safe_modules, []),
     Safe = lists:any(fun(X) -> X =:= Module end, Safemodules),
     if not Safe ->
 	   throw({serval, unsafe_operation});
@@ -62,7 +62,8 @@ handle_cors(Req) ->
     R4.
 
 api(Module, Function, Arguments) ->
-    io:format(">> calling ~s:~s with ~p~n", [Module, Function, Arguments]),
+    serval_utils:debugfmt(">> calling ~s:~s with ~p~n",
+			  [Module, Function, Arguments]),
     try
 	apply(Module, Function, Arguments)
     catch
