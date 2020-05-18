@@ -1,6 +1,6 @@
 {application, serval,
  [{description, "An OTP application"},
-  {vsn, "0.6.0"},
+  {vsn, "0.6.1"},
   {applications, [kernel, stdlib, cowboy, jsone, jsonerl]},
   {mod, {serval_app, []}}
  ]}.
