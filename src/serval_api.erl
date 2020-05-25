@@ -85,8 +85,7 @@ handle_common(Req0) ->
     try
 	{Req1, {Type, Module, Fn, Argument}} = get_command(Req0),
 	{RespHeaders, Body} = handle_request(Type, Module, Fn, Argument),
-	Req2 = handle_cors(Req1),
-	{Req2, RespHeaders, Body}
+	{Req1, RespHeaders, Body}
     catch
 	throw:{serval, Info}->
 	    {Req0, #{}, jsonerl:encode_tojson({error, Info})}
@@ -105,11 +104,12 @@ safe_handle(Req0) ->
 init(Req0, State) ->
     T1 = os:system_time(millisecond),
     {Req1, Headers, Body} = safe_handle(Req0),
+    Req2 = handle_cors(Req1),
     T2 = os:system_time(millisecond),
     Timecost = list_to_binary(io_lib:format("~w", [T2 - T1])),
     NewHeaders = Headers#{<<"api-cost">> => Timecost},
-    Req2 = cowboy_req:reply(200, NewHeaders, Body, Req1),
-    {ok, Req2, State}.
+    Req3 = cowboy_req:reply(200, NewHeaders, Body, Req2),
+    {ok, Req3, State}.
 
 terminate(_Reason, _Req, _State) ->
     ok.
