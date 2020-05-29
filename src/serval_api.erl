@@ -62,8 +62,6 @@ handle_cors(Req) ->
     R4.
 
 api(Module, Function, Arguments) ->
-    serval_utils:debugfmt(">> calling ~s:~s with ~p~n",
-			  [Module, Function, Arguments]),
     try
 	apply(Module, Function, Arguments)
     catch
@@ -87,7 +85,9 @@ handle_common(Req0) ->
 	{RespHeaders, Body} = handle_request(Type, Module, Fn, Argument),
 	{Req1, RespHeaders, Body}
     catch
-	throw:{serval, Info}->
+	throw:{serval, Info}:S->
+	    serval_utils:debugfmt("<handle_common> ~p~nstacktrace: ~p~n",
+				  [Info, S]),
 	    {Req0, #{}, jsonerl:encode_tojson({error, Info})}
     end.
 
@@ -97,7 +97,8 @@ safe_handle(Req0) ->
 	handle_common(Req0)
     catch
 	T:I:S ->
-	    io:format("*~p: ~p, stacktrace:~n~p~n", [T, I, S]),
+	    serval_utils:debugfmt("<safe_handle> ~p:~p~nstacktrace: ~p~n",
+				  [T, I, S]),
 	    {Req0, #{}, jsonerl:encode_tojson(server_error)}
     end.
 
