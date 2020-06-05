@@ -12,7 +12,7 @@
   1},
  {<<"jsonerl">>,
   {git,"https://github.com/wallacegibbon/jsonerl",
-       {ref,"1e187d8ece81ed37fae516b1aa1e5f21b271a99e"}},
+       {ref,"dc359ce87ba459a9c36ad96f35d0578375659b8c"}},
   0},
  {<<"ranch">>,
   {git,"https://github.com/wallacegibbon/ranch",
