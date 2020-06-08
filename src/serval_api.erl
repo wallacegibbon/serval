@@ -79,7 +79,8 @@ handle_request(raw, Module, Fn, Argument) ->
 handle_request(_, _, _, _) ->
     {#{}, <<"invalid url">>}.
 
-handle_common(Req0) ->
+handle_common(#{method := Method} = Req0)
+  when Method =/= <<"OPTION">> ->
     try
 	{Req1, {Type, Module, Fn, Argument}} = get_command(Req0),
 	{RespHeaders, Body} = handle_request(Type, Module, Fn, Argument),
@@ -89,7 +90,9 @@ handle_common(Req0) ->
 	    serval_utils:debugfmt("<handle_common> ~p~nstacktrace: ~p~n",
 				  [Info, S]),
 	    {Req0, #{}, jsonerl:encode_tojson({error, Info})}
-    end.
+    end;
+handle_common(Req0) ->
+    {Req0, #{}, <<>>}.
 
 %% stack traces for unknown error are printed
 safe_handle(Req0) ->
