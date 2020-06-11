@@ -66,7 +66,8 @@ api(Module, Function, Arguments) ->
 	apply(Module, Function, Arguments)
     catch
 	error:undef ->
-	    throw({serval, {undefined_function, Module, Function}})
+	    throw({serval, {undefined_function,
+			    Module, Function, Arguments}})
     end.
 
 handle_request(jsonerl, Module, Fn, Argument) ->
