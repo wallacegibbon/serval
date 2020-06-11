@@ -20,7 +20,7 @@ extract_atom(Binary) ->
 	binary_to_existing_atom(Binary, utf8)
     catch
 	error:badarg ->
-	    throw({serval, unknown_operation})
+	    throw({serval, {unknown_operation, Binary}})
     end.
 
 decode_apiargument(Rawbody) ->
@@ -28,7 +28,7 @@ decode_apiargument(Rawbody) ->
 	check_params(jsonerl:decode_fromjson(fix_emptybody(Rawbody)))
     catch
 	throw:{invalid_json, _V} = E ->
-	    throw({serval, E})
+	    throw({serval, {argument_error, E}})
     end.
 
 check_safety(Module) ->
@@ -66,7 +66,7 @@ api(Module, Function, Arguments) ->
 	apply(Module, Function, Arguments)
     catch
 	error:undef ->
-	    throw({serval, undefined_function})
+	    throw({serval, {undefined_function, Module, Function}})
     end.
 
 handle_request(jsonerl, Module, Fn, Argument) ->
